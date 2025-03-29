@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, Card } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -158,7 +158,7 @@ export default function AllEventsScreen({ navigation, route }) {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      <View style={styles.container} testID="allEventsScreen">
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} testID="allEventsScreen">
         {dateKeys.length === 0 ? (
           <Text style={styles.emptyText}>
             {selectedDate ? 'No events for this date.' : 'No events found.'}
@@ -199,7 +199,6 @@ export default function AllEventsScreen({ navigation, route }) {
                         {ev.title}
                       </Text>
                     </View>
-                    {/* Only allow editing/deletion if editMode is on AND this is NOT a task */}
                     {editMode && !ev.isTask && (
                       <View style={styles.iconRow}>
                         <TouchableOpacity
@@ -223,7 +222,7 @@ export default function AllEventsScreen({ navigation, route }) {
             </View>
           ))
         )}
-      </View>
+      </ScrollView>
     </ImageBackground>
   );
 }
@@ -233,6 +232,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
     padding: 16,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   headerRightButton: {
     color: '#fff',

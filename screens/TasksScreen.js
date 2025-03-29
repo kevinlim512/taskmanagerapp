@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   LayoutAnimation,
   UIManager,
-  Platform
+  Platform,
+  ScrollView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text } from 'react-native-paper';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
 
 import ShoppingListScreen from './Tasks/ShoppingListScreen';
 import NewTaskSection from './Tasks/NewTaskSection';
@@ -69,7 +69,6 @@ export default function TasksScreen({ navigation }) {
     });
   }, [navigation, activeSubTab, isEditing]);
 
-  // Load tasks on mount and when the screen regains focus.
   const loadTasks = async () => {
     try {
       const stored = await AsyncStorage.getItem(TASKS_KEY);
@@ -83,14 +82,12 @@ export default function TasksScreen({ navigation }) {
     }
   };
 
-  // Refresh tasks whenever the screen gains focus.
   useFocusEffect(
     React.useCallback(() => {
       loadTasks();
     }, [])
   );
 
-  // Enable LayoutAnimation on Android.
   if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
   }
@@ -147,63 +144,69 @@ export default function TasksScreen({ navigation }) {
     AsyncStorage.setItem(TASKS_KEY, JSON.stringify([...newActive, ...newCompleted]));
   };
 
+  const renderContent = () => (
+    <>
+      <View style={styles.subTabBar}>
+        <TouchableOpacity
+          style={[styles.subTabItem, activeSubTab === 'Tasks' && styles.subTabItemActive]}
+          onPress={() => setActiveSubTab('Tasks')}
+        >
+          <Text style={styles.subTabItemText}>Tasks</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTabItem, activeSubTab === 'Shopping List' && styles.subTabItemActive]}
+          onPress={() => setActiveSubTab('Shopping List')}
+        >
+          <Text style={styles.subTabItemText}>Shopping List</Text>
+        </TouchableOpacity>
+      </View>
+      {activeSubTab === 'Tasks' ? (
+        // Wrapping the Tasks content in a ScrollView to make the entire screen scrollable
+        <ScrollView style={styles.tasksContainer} contentContainerStyle={styles.scrollContent}>
+          <NewTaskSection
+            taskText={taskText}
+            setTaskText={setTaskText}
+            isDateEnabled={isDateEnabled}
+            setIsDateEnabled={setIsDateEnabled}
+            taskDate={taskDate}
+            setTaskDate={setTaskDate}
+            showDatePicker={showDatePicker}
+            setShowDatePicker={setShowDatePicker}
+            addTask={addTask}
+            formatDate={formatDate}
+          />
+          <TasksListSection
+            tasks={tasks}
+            completedTasks={completedTasks}
+            toggleTask={toggleTask}
+            deleteTask={deleteTask}
+            formatDate={formatDate}
+            saveTasks={saveTasks}
+            isEditing={isEditing}
+            scrollEnabled={false}
+          />
+        </ScrollView>
+      ) : (
+        <ShoppingListStackScreen isEditing={isEditing} />
+      )}
+    </>
+  );
+
   return (
     <ImageBackground
       source={require('../assets/gradient1.jpg')}
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      <View style={styles.container}>
-        {/* Sub-tab Bar */}
-        <View style={styles.subTabBar}>
-          <TouchableOpacity
-            style={[styles.subTabItem, activeSubTab === 'Tasks' && styles.subTabItemActive]}
-            onPress={() => setActiveSubTab('Tasks')}
-          >
-            <Text style={styles.subTabItemText}>Tasks</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.subTabItem, activeSubTab === 'Shopping List' && styles.subTabItemActive]}
-            onPress={() => setActiveSubTab('Shopping List')}
-          >
-            <Text style={styles.subTabItemText}>Shopping List</Text>
-          </TouchableOpacity>
-        </View>
-        {activeSubTab === 'Tasks' ? (
-          <View style={styles.scrollContainer}>
-            <NewTaskSection
-              taskText={taskText}
-              setTaskText={setTaskText}
-              isDateEnabled={isDateEnabled}
-              setIsDateEnabled={setIsDateEnabled}
-              taskDate={taskDate}
-              setTaskDate={setTaskDate}
-              showDatePicker={showDatePicker}
-              setShowDatePicker={setShowDatePicker}
-              addTask={addTask}
-              formatDate={formatDate}
-            />
-            <TasksListSection
-              tasks={tasks}
-              completedTasks={completedTasks}
-              toggleTask={toggleTask}
-              deleteTask={deleteTask}
-              formatDate={formatDate}
-              saveTasks={saveTasks}
-              isEditing={isEditing}
-            />
-          </View>
-        ) : (
-          <ShoppingListStackScreen isEditing={isEditing} />
-        )}
-      </View>
+      {renderContent()}
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   headerButtonText: {
     fontSize: 16,
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  scrollContainer: {
-    paddingBottom: 20,
+  tasksContainer: {
+    flex: 1,
   },
 });

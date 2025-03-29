@@ -122,6 +122,7 @@ export default function TasksListSection({
         renderItem={renderActiveItem}
         onDragEnd={handleDragEnd}
         contentContainerStyle={styles.listContent}
+        scrollEnabled={false}
         renderPlaceholderItem={({ item }) => (
           <Surface style={[styles.card, { height: getCardHeight(item), opacity: 0 }]} />
         )}
