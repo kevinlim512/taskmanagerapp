@@ -116,24 +116,24 @@ describe('Guests Tab Screens', () => {
   // =====================
   test('AddContactScreen saves a new guest with dietary info', async () => {
     AsyncStorage.getItem.mockResolvedValueOnce(null); // no guests yet
-    const goBack = jest.fn();
-
+    const navigation = { navigate: jest.fn(), goBack: jest.fn() };
+  
     const { getByPlaceholderText, getByText } = render(
-      <AddContactScreen navigation={{ goBack }} />
+      <AddContactScreen navigation={navigation} />
     );
-
+  
     fireEvent.changeText(getByPlaceholderText('First Name'), 'John');
     fireEvent.changeText(getByPlaceholderText('Last Name'), 'Doe');
     fireEvent.changeText(getByPlaceholderText('Phone'), '1234567890');
     fireEvent.changeText(getByPlaceholderText('Email'), 'john@example.com');
     fireEvent.press(getByText('Yes'));
     fireEvent.changeText(getByPlaceholderText('Enter dietary restrictions'), 'Vegan');
-
+  
     fireEvent.press(getByText('Add Contact'));
-
+  
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalled();
-      expect(goBack).toHaveBeenCalled();
+      expect(navigation.navigate).toHaveBeenCalled();
     });
   });
 

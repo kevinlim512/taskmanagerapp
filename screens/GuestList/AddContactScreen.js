@@ -48,7 +48,7 @@ export default function AddContactScreen({ navigation }) {
       const guestList = stored ? JSON.parse(stored) : [];
       const updatedList = [...guestList, newGuest];
       await AsyncStorage.setItem(GUESTS_KEY, JSON.stringify(updatedList));
-      navigation.goBack();
+      navigation.navigate('GuestMain', { activeTab: 'GuestList', hideHeaderLeft: true }); // return to Guest List tab
     } catch (error) {
       console.warn('Failed to add contact:', error);
       Alert.alert('Error', 'Failed to add contact.');

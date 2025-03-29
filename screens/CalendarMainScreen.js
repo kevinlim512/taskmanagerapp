@@ -1,4 +1,6 @@
-import React, { useLayoutEffect, useState, useEffect } from 'react';
+// Removed the useLayoutEffect block that sets headerRight entirely.
+
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { Text } from 'react-native-paper';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -99,16 +101,6 @@ function MergedCalendarHome({ navigation }) {
     }, [])
   );
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('AllEvents')}>
-          <Text style={styles.headerButtonText}>All Events</Text>
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
-
   // Today's local date string
   const todayString = getLocalDateString(new Date());
 
@@ -191,12 +183,20 @@ function MergedCalendarHome({ navigation }) {
           <Text style={styles.navButtonText}>Add New Event</Text>
         </TouchableOpacity>
         {partyDateString && (
-          <TouchableOpacity
-            style={[styles.navButton, { marginTop: 10, backgroundColor: 'red' }]}
-            onPress={showPartyEvents}
-          >
-            <Text style={styles.navButtonText}>View Party Day Events</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={[styles.navButton, { marginTop: 10, backgroundColor: 'red' }]}
+              onPress={showPartyEvents}
+            >
+              <Text style={styles.navButtonText}>View Party Day Events</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.navButton, { marginTop: 10, backgroundColor: 'red' }]}
+              onPress={() => navigation.navigate('AllEvents')}
+            >
+              <Text style={styles.navButtonText}>View All Events</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </ImageBackground>

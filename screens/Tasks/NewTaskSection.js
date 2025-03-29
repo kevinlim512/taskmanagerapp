@@ -28,11 +28,11 @@ export default function NewTaskSection(props) {
   const handleAddTask = () => {
     if (taskText?.trim()) {
       if (typeof onAddTask === 'function') {
-        onAddTask(taskText.trim()); // call the callback with the trimmed text
+        onAddTask(taskText.trim());
       } else {
         addTask();
       }
-      setTaskText(""); // clear input after submission
+      setTaskText("");
       Keyboard.dismiss();
     }
   };

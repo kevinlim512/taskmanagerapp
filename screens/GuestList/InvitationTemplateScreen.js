@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const PARTY_INFO_KEY = '@party_info';
 const INVITES_KEY = '@invitations';
@@ -107,19 +107,8 @@ export default function InvitationTemplateScreen() {
       const updated = [...invites, newInvite];
       await AsyncStorage.setItem(INVITES_KEY, JSON.stringify(updated));
       
-      // Get the parent's state and find the key of the GuestMain route
-      const state = navigation.getState();
-      const guestMainRoute = state.routes.find(r => r.name === 'GuestMain');
-      if (guestMainRoute) {
-        navigation.dispatch(
-          CommonActions.setParams({
-            params: { activeTab: 'Invitations' },
-            key: guestMainRoute.key,
-          })
-        );
-      }
-      
-      navigation.goBack();
+      // Navigate to GuestMain with activeTab set to 'Invitations'
+      navigation.navigate('GuestMain', { activeTab: 'Invitations' });
     } catch (e) {
       console.warn(e);
       Alert.alert('Error', 'Failed to save invitation.');

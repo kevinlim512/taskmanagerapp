@@ -40,7 +40,9 @@ export default function AllEventsScreen({ navigation, route }) {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={() => setEditMode((prev) => !prev)}>
-          <Text style={styles.headerRightButton}>{editMode ? 'Done' : 'Edit'}</Text>
+          <Text style={styles.headerRightButton}>
+            {editMode ? 'Done' : 'Edit'}
+          </Text>
         </TouchableOpacity>
       ),
     });
@@ -69,12 +71,15 @@ export default function AllEventsScreen({ navigation, route }) {
         }));
       }
 
-      // Merge events and tasks with dates.
-      const mergedEvents = [
-        ...(Array.isArray(parsedEvents) ? parsedEvents : []),
-        ...tasksWithDate,
-      ];
-      setEvents(mergedEvents);
+      // Merge events and tasks, avoiding duplicates if they share the same ID.
+      const uniqueMerged = Array.isArray(parsedEvents) ? [...parsedEvents] : [];
+      tasksWithDate.forEach((task) => {
+        if (!uniqueMerged.some((ev) => ev.id === task.id)) {
+          uniqueMerged.push(task);
+        }
+      });
+
+      setEvents(uniqueMerged);
     } catch (error) {
       console.warn(error);
       setEvents([]);
@@ -141,7 +146,9 @@ export default function AllEventsScreen({ navigation, route }) {
   if (selectedDate) {
     dateKeys = [selectedDate];
   } else {
-    dateKeys = Object.keys(groupedEvents).sort((a, b) => new Date(a) - new Date(b));
+    dateKeys = Object.keys(groupedEvents).sort(
+      (a, b) => new Date(a) - new Date(b)
+    );
   }
   dateKeys = dateKeys.filter((dk) => groupedEvents[dk]);
 
@@ -160,24 +167,40 @@ export default function AllEventsScreen({ navigation, route }) {
           dateKeys.map((dateKey) => (
             <View key={dateKey} style={{ marginBottom: 20 }}>
               <Text style={styles.sectionHeader}>{formatHeading(dateKey)}</Text>
-              {groupedEvents[dateKey].map((ev) => (
+              {groupedEvents[dateKey].map((ev, index) => (
                 <Card
-                  key={ev.id}
+                  key={`${ev.id}-${index}`}
                   style={[
                     styles.card,
-                    ev.isTask && { backgroundColor: 'transparent', borderColor: '#fff', borderWidth: 3 },
+                    ev.isTask && {
+                      backgroundColor: 'transparent',
+                      borderColor: '#fff',
+                      borderWidth: 3,
+                    },
                   ]}
                 >
                   <Card.Content style={styles.cardRow}>
                     <View style={{ flex: 1 }}>
                       {ev.isTask ? (
-                        <Text style={[styles.cardTask, { color: '#fff' }]}>Task</Text>
+                        <Text style={[styles.cardTask, { color: '#fff' }]}>
+                          Task
+                        </Text>
                       ) : (
-                        <Text style={styles.cardTime}>{formatTime(ev.datetime)}</Text>
+                        <Text style={styles.cardTime}>
+                          {formatTime(ev.datetime)}
+                        </Text>
                       )}
-                      <Text style={[styles.cardTitle, ev.isTask && { color: '#fff' }]}>{ev.title}</Text>
+                      <Text
+                        style={[
+                          styles.cardTitle,
+                          ev.isTask && { color: '#fff' },
+                        ]}
+                      >
+                        {ev.title}
+                      </Text>
                     </View>
-                    {editMode && (
+                    {/* Only allow editing/deletion if editMode is on AND this is NOT a task */}
+                    {editMode && !ev.isTask && (
                       <View style={styles.iconRow}>
                         <TouchableOpacity
                           accessibilityLabel={`Edit Event ${ev.id}`}

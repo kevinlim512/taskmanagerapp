@@ -95,11 +95,11 @@ export default function InvitationsScreen({ forceEdit = false }) {
           style={styles.fullWidthButton}
           onPress={() => navigation.navigate('InvitationTemplate')}
         >
-          <Text style={styles.buttonText}>Create Invitation Template</Text>
+          <Text style={styles.buttonText}>Create Invitation from Template</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.fullWidthButton, { marginBottom: 16 }]}
+          style={[styles.fullWidthButton, { marginBottom: 16, backgroundColor: 'red' }]}
           onPress={() => navigation.navigate('InvitationSendFlow')}
         >
           <Text style={styles.buttonText}>Send Invitation</Text>

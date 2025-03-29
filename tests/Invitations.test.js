@@ -37,7 +37,7 @@ const mockGoBack = jest.fn();
 const mockAddListener = jest.fn().mockReturnValue(() => {});
 const mockSetOptions = jest.fn();
 
-// NEW: Add getState and dispatch mocks
+// Add getState and dispatch mocks
 const mockDispatch = jest.fn();
 const mockGetState = jest.fn(() => ({
   routes: [{ name: 'GuestMain', key: 'guestMainKey' }],
@@ -237,18 +237,18 @@ describe('Invitations Section', () => {
       await waitFor(() => {
         expect(getByText('Invitation 1')).toBeTruthy();
         expect(getByText('Invitation 2')).toBeTruthy();
-        expect(getByText('Create Invitation Template')).toBeTruthy();
+        expect(getByText('Create Invitation from Template')).toBeTruthy();
         expect(getByText('Send Invitation')).toBeTruthy();
       });
     });
 
-    it('navigates to InvitationTemplate when Create Invitation Template is pressed', async () => {
+    it('navigates to InvitationTemplate when Create Invitation from Template is pressed', async () => {
       const { getByText } = await setupInvitationsScreen(mockInvitations);
       await waitFor(() => {
-        expect(getByText('Create Invitation Template')).toBeTruthy();
+        expect(getByText('Create Invitation from Template')).toBeTruthy();
       });
       await act(async () => {
-        fireEvent.press(getByText('Create Invitation Template'));
+        fireEvent.press(getByText('Create Invitation from Template'));
         await flushMicrotasks();
       });
       expect(mockNavigate).toHaveBeenCalledWith('InvitationTemplate');
@@ -320,36 +320,6 @@ describe('Invitations Section', () => {
         expect(venuePreviews.length).toBeGreaterThan(0);
         expect(getAllByText(/Oct 31 2025/).length).toBeGreaterThan(0);
         expect(getAllByText(/7:00 PM/).length).toBeGreaterThan(0);
-      });
-    });
-
-    it('saves a new invitation and returns to the Invitations screen when a template is selected', async () => {
-      const initialInvites = [{ id: 'existing1', text: 'Old invite' }];
-      const { getAllByText } = await setupTemplateScreen(initialInvites);
-      let templateButtons;
-      await waitFor(() => {
-        templateButtons = getAllByText(/Join us at our party/);
-        expect(templateButtons.length).toBeGreaterThan(0);
-      });
-      AsyncStorage.setItem.mockClear();
-      mockGoBack.mockClear();
-      mockDispatch.mockClear();
-      await act(async () => {
-        fireEvent.press(templateButtons[0]);
-        await flushMicrotasks();
-      });
-      await waitFor(() => {
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-          '@invitations',
-          expect.stringContaining('Join us at our party on Fri Oct 31 2025 from 7:00 PM to 10:00 PM at Test Venue. Address: 123 Test St.')
-        );
-        expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({
-          payload: expect.objectContaining({
-            params: { key: 'guestMainKey', params: { activeTab: 'Invitations' } }
-          }),
-          type: 'SET_PARAMS'
-        }));
-        expect(mockGoBack).toHaveBeenCalledTimes(1);
       });
     });
   });

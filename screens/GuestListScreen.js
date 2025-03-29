@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { Text } from 'react-native-paper';
-import { createStackNavigator } from '@react-navigation/stack';
-import { useRoute } from '@react-navigation/native';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import GuestListHome from './GuestList/GuestListHome';
 import GuestDetailScreen from './GuestList/GuestDetailScreen';
 import InvitationsScreen from './GuestList/InvitationsScreen';
@@ -12,16 +12,24 @@ import EditInvitationScreen from './GuestList/EditInvitationScreen';
 
 const Stack = createStackNavigator();
 
-// Updated GuestMain to read activeTab from route params
-function GuestMain({ navigation }) {
+function GuestMain() {
+  const navigation = useNavigation();
   const route = useRoute();
   const [activeTab, setActiveTab] = useState(route.params?.activeTab || 'GuestList');
 
   useEffect(() => {
-    if (route.params?.activeTab) {
-      setActiveTab(route.params.activeTab);
+    if (route.params) {
+      const { activeTab, hideHeaderLeft } = route.params;
+      if (activeTab) {
+        setActiveTab(activeTab);
+      }
+      if (activeTab === 'Invitations' || hideHeaderLeft) {
+        navigation.setOptions({ headerLeft: () => null });
+      } else {
+        navigation.setOptions({ headerLeft: undefined });
+      }
     }
-  }, [route.params?.activeTab]);
+  }, [route.params]);
 
   return (
     <View style={styles.container}>
@@ -30,7 +38,7 @@ function GuestMain({ navigation }) {
         <TouchableOpacity
           style={[
             styles.tabItem,
-            activeTab === 'GuestList' && styles.tabItemActive
+            activeTab === 'GuestList' && styles.tabItemActive,
           ]}
           onPress={() => setActiveTab('GuestList')}
         >
@@ -39,7 +47,7 @@ function GuestMain({ navigation }) {
         <TouchableOpacity
           style={[
             styles.tabItem,
-            activeTab === 'Invitations' && styles.tabItemActive
+            activeTab === 'Invitations' && styles.tabItemActive,
           ]}
           onPress={() => setActiveTab('Invitations')}
         >
@@ -47,7 +55,6 @@ function GuestMain({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Conditionally show "Add Contact" only when Guest List is active */}
       {activeTab === 'GuestList' && (
         <TouchableOpacity
           style={styles.addContactButton}
@@ -58,7 +65,7 @@ function GuestMain({ navigation }) {
       )}
 
       {activeTab === 'Invitations' ? (
-        <InvitationsScreen />
+        <InvitationsScreen forceEdit={true} />
       ) : (
         <GuestListHome navigation={navigation} />
       )}
@@ -66,7 +73,6 @@ function GuestMain({ navigation }) {
   );
 }
 
-// Higher-order component to wrap a screen in the gradient background
 function withGradientBackground(Component) {
   return function (props) {
     return (
@@ -88,6 +94,8 @@ export default function GuestListScreen() {
         headerStyle: { backgroundColor: 'transparent' },
         headerTintColor: '#fff',
         cardStyle: { backgroundColor: 'transparent' },
+        gestureEnabled: true,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
       <Stack.Screen

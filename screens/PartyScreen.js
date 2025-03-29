@@ -1,4 +1,3 @@
-// PartyScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -10,15 +9,17 @@ import {
   Platform,
   Keyboard,
   ImageBackground,
+  SafeAreaView,
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const PARTY_INFO_KEY = '@party_info';
 const EVENTS_KEY = '@events';
 
-export default function PartyScreen() {
+export default function PartyScreen({ navigation }) {
   const [partyName, setPartyName] = useState('');
   const [date, setDate] = useState(null);
   const [startTime, setStartTime] = useState(null);
@@ -29,6 +30,11 @@ export default function PartyScreen() {
   const [showDateModal, setShowDateModal] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+
+  // New states for reset flow modals
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showFinalConfirmModal, setShowFinalConfirmModal] = useState(false);
 
   // Load persisted party info on mount.
   useEffect(() => {
@@ -70,7 +76,6 @@ export default function PartyScreen() {
         let events = JSON.parse(storedEvents);
         if (!Array.isArray(events)) events = [];
         const updatedEvents = events.map(ev => {
-          // If event has usePartyDate enabled, update its date portion
           if (ev.usePartyDate && newPartyDate) {
             const oldDate = new Date(ev.datetime);
             const updatedDate = new Date(
@@ -111,7 +116,6 @@ export default function PartyScreen() {
     try {
       await AsyncStorage.setItem(PARTY_INFO_KEY, JSON.stringify(info));
       setIsEditing(false);
-      // After saving, update events that have usePartyDate enabled
       updateEventsWithPartyDate(date);
     } catch (error) {
       console.error('Error saving party info:', error);
@@ -131,42 +135,132 @@ export default function PartyScreen() {
     return `${hours}:${minStr} ${ampm}`;
   }
 
-  // Branch: No party info and not editing
-  if (!hasSomeData && !isEditing) {
-    return (
-      <ImageBackground
-        source={require('../assets/gradient1.jpg')}
-        style={{ flex: 1 }}
-        resizeMode="cover"
-      >
-        <View style={styles.partyContainer}>
-          <View style={styles.partyBox}>
-            <Text style={styles.title}>No Party Information</Text>
-            <Text style={styles.subtitle}>Please add your party details.</Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setIsEditing(true)}
-            >
-              <Text style={{ color: '#fff' }}>Add Party Info</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ImageBackground>
-    );
-  }
+  // Reset App Data Flow
+  const resetAppData = async () => {
+    try {
+      await AsyncStorage.clear();
+      Alert.alert('Success', 'App data has been reset.');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to reset app data.');
+    }
+  };
 
-  // Branch: Editing party info
-  if (isEditing) {
-    return (
-      <ImageBackground
-        source={require('../assets/gradient1.jpg')}
-        style={{ flex: 1 }}
-        resizeMode="cover"
-      >
+  // Render the first reset modal with the red "Reset App Data" button
+  const renderResetModal = () => (
+    <Modal
+      visible={showResetModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowResetModal(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={[styles.fullWidthButton, { backgroundColor: 'red' }]}
+            onPress={() => {
+              setShowResetModal(false);
+              setShowConfirmModal(true);
+            }}
+          >
+            <Text style={styles.buttonText}>Reset App Data</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowResetModal(false)}>
+            <Text style={{ color: '#fff', marginTop: 12 }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Render the first confirmation modal
+  const renderConfirmModal = () => (
+    <Modal
+      visible={showConfirmModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowConfirmModal(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Are you sure?</Text>
+          <Text style={styles.modalSubtitle}>This cannot be reversed.</Text>
+          <TouchableOpacity
+            style={[styles.fullWidthButton, { backgroundColor: 'red' }]}
+            onPress={() => {
+              setShowConfirmModal(false);
+              setShowFinalConfirmModal(true);
+            }}
+          >
+            <Text style={styles.buttonText}>Reset App Data</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
+            <Text style={{ color: '#fff', marginTop: 12 }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Render the final confirmation modal with more emphasis
+  const renderFinalConfirmModal = () => (
+    <Modal
+      visible={showFinalConfirmModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowFinalConfirmModal(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={[styles.modalTitle, { color: 'red' }]}>ARE YOU REALLY SURE?</Text>
+          <Text style={[styles.modalSubtitle, { fontWeight: 'bold' }]}>
+            This action cannot be undone.
+          </Text>
+          <TouchableOpacity
+            style={[styles.fullWidthButton, { backgroundColor: 'red' }]}
+            onPress={async () => {
+              setShowFinalConfirmModal(false);
+              await resetAppData();
+              // Refresh the screen by resetting the state
+              setPartyName('');
+              setDate(null);
+              setStartTime(null);
+              setEndTime(null);
+              setVenue('');
+              setAddress('');
+              setIsEditing(true);
+            }}
+          >
+            <Text style={styles.buttonText}>DELETE APP DATA</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowFinalConfirmModal(false)}>
+            <Text style={{ color: '#fff', marginTop: 12 }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Render the Settings button at the top right of the screen inside a SafeAreaView so it's always accessible
+  const renderSettingsButton = () => (
+    <SafeAreaView style={styles.settingsContainer}>
+      <TouchableOpacity onPress={() => setShowResetModal(true)}>
+        <MaterialIcons name="settings" size={24} color="#fff" />
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+
+  // Always render the settings button at the top inside the ImageBackground
+  return (
+    <ImageBackground
+      source={require('../assets/gradient1.jpg')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      {renderSettingsButton()}
+      {isEditing ? (
         <View style={styles.partyContainer}>
           <View style={styles.partyBox}>
             <Text style={styles.title}>Party Information</Text>
-
             <Text style={styles.label}>Party Name (required)</Text>
             <TextInput
               style={styles.input}
@@ -177,37 +271,24 @@ export default function PartyScreen() {
               returnKeyType="done"
               onSubmitEditing={() => Keyboard.dismiss()}
             />
-
             <Text style={styles.label}>Date (required)</Text>
-            <TouchableOpacity
-              style={styles.fakeInput}
-              onPress={() => setShowDateModal(true)}
-            >
+            <TouchableOpacity style={styles.fakeInput} onPress={() => setShowDateModal(true)}>
               <Text style={{ color: date ? '#000' : '#aaa' }}>
                 {date ? date.toDateString() : 'Select date'}
               </Text>
             </TouchableOpacity>
-
             <Text style={styles.label}>Start Time (required)</Text>
-            <TouchableOpacity
-              style={styles.fakeInput}
-              onPress={() => setShowStartModal(true)}
-            >
+            <TouchableOpacity style={styles.fakeInput} onPress={() => setShowStartModal(true)}>
               <Text style={{ color: startTime ? '#000' : '#aaa' }}>
                 {startTime ? formatTime(startTime) : 'Select start time'}
               </Text>
             </TouchableOpacity>
-
             <Text style={styles.label}>End Time (required)</Text>
-            <TouchableOpacity
-              style={styles.fakeInput}
-              onPress={() => setShowEndModal(true)}
-            >
+            <TouchableOpacity style={styles.fakeInput} onPress={() => setShowEndModal(true)}>
               <Text style={{ color: endTime ? '#000' : '#aaa' }}>
                 {endTime ? formatTime(endTime) : 'Select end time'}
               </Text>
             </TouchableOpacity>
-
             <Text style={styles.label}>Venue (required)</Text>
             <TextInput
               style={styles.input}
@@ -218,7 +299,6 @@ export default function PartyScreen() {
               returnKeyType="done"
               onSubmitEditing={() => Keyboard.dismiss()}
             />
-
             <Text style={styles.label}>Address (optional)</Text>
             <TextInput
               style={styles.input}
@@ -229,17 +309,11 @@ export default function PartyScreen() {
               returnKeyType="done"
               onSubmitEditing={() => Keyboard.dismiss()}
             />
-
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton]}
-              onPress={handleSave}
-            >
+            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
               <Text style={styles.saveButtonText}>Save Changes</Text>
             </TouchableOpacity>
           </View>
-
-          {/* DATE MODAL */}
-          <Modal visible={showDateModal} transparent animationType="fade">
+          <Modal visible={showDateModal} transparent animationType="fade" onRequestClose={() => setShowDateModal(false)}>
             <View style={styles.modalContainer}>
               <View style={[styles.modalContent, styles.pickerBackground]}>
                 <DateTimePicker
@@ -253,18 +327,13 @@ export default function PartyScreen() {
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   textColor="white"
                 />
-                <TouchableOpacity
-                  style={styles.modalDoneButton}
-                  onPress={() => setShowDateModal(false)}
-                >
+                <TouchableOpacity style={styles.modalDoneButton} onPress={() => setShowDateModal(false)}>
                   <Text style={styles.modalDoneText}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
-
-          {/* START TIME MODAL */}
-          <Modal visible={showStartModal} transparent animationType="fade">
+          <Modal visible={showStartModal} transparent animationType="fade" onRequestClose={() => setShowStartModal(false)}>
             <View style={styles.modalContainer}>
               <View style={[styles.modalContent, styles.pickerBackground]}>
                 <DateTimePicker
@@ -278,18 +347,13 @@ export default function PartyScreen() {
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   textColor="white"
                 />
-                <TouchableOpacity
-                  style={styles.modalDoneButton}
-                  onPress={() => setShowStartModal(false)}
-                >
+                <TouchableOpacity style={styles.modalDoneButton} onPress={() => setShowStartModal(false)}>
                   <Text style={styles.modalDoneText}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
-
-          {/* END TIME MODAL */}
-          <Modal visible={showEndModal} transparent animationType="fade">
+          <Modal visible={showEndModal} transparent animationType="fade" onRequestClose={() => setShowEndModal(false)}>
             <View style={styles.modalContainer}>
               <View style={[styles.modalContent, styles.pickerBackground]}>
                 <DateTimePicker
@@ -303,59 +367,44 @@ export default function PartyScreen() {
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   textColor="white"
                 />
-                <TouchableOpacity
-                  style={styles.modalDoneButton}
-                  onPress={() => setShowEndModal(false)}
-                >
+                <TouchableOpacity style={styles.modalDoneButton} onPress={() => setShowEndModal(false)}>
                   <Text style={styles.modalDoneText}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
         </View>
-      </ImageBackground>
-    );
-  }
-
-  // Display saved party info when not editing.
-  return (
-    <ImageBackground
-      source={require('../assets/gradient1.jpg')}
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
-      <View style={styles.partyContainer}>
-        <View style={styles.partyBox}>
-          <Text style={styles.bigText}>{partyName}</Text>
-          <Text style={styles.mediumText}>
-            Date: {date ? date.toDateString() : 'N/A'}
-          </Text>
-          <Text style={styles.mediumText}>
-            Start: {startTime ? formatTime(startTime) : 'N/A'}
-          </Text>
-          <Text style={styles.mediumText}>
-            End: {endTime ? formatTime(endTime) : 'N/A'}
-          </Text>
-          <Text style={styles.mediumText}>
-            Venue: {venue || 'N/A'}
-          </Text>
-          {address ? (
-            <Text style={styles.mediumText}>Address: {address}</Text>
-          ) : null}
-
-          <TouchableOpacity
-            style={[styles.button, { marginTop: 12 }]}
-            onPress={() => setIsEditing(true)}
-          >
-            <Text style={{ color: '#fff' }}>Edit</Text>
-          </TouchableOpacity>
+      ) : (
+        <View style={styles.partyContainer}>
+          <View style={styles.partyBox}>
+            <Text style={styles.bigText}>{partyName}</Text>
+            <Text style={styles.mediumText}>Date: {date ? date.toDateString() : 'N/A'}</Text>
+            <Text style={styles.mediumText}>Start: {startTime ? formatTime(startTime) : 'N/A'}</Text>
+            <Text style={styles.mediumText}>End: {endTime ? formatTime(endTime) : 'N/A'}</Text>
+            <Text style={styles.mediumText}>Venue: {venue || 'N/A'}</Text>
+            {address ? <Text style={styles.mediumText}>Address: {address}</Text> : null}
+            <TouchableOpacity style={[styles.button, { marginTop: 12 }]} onPress={() => setIsEditing(true)}>
+              <Text style={{ color: '#fff' }}>Edit</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
+      {renderResetModal()}
+      {renderConfirmModal()}
+      {renderFinalConfirmModal()}
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  settingsContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 25,
+    paddingTop: Platform.OS === 'ios' ? 20 : 0,
+    paddingRight: 16,
+    zIndex: 9999,
+  },
   partyContainer: {
     flex: 1,
     padding: 16,
@@ -445,6 +494,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
+    backgroundColor: '#0d1652',
   },
   pickerBackground: {
     backgroundColor: '#0d1652',
@@ -459,5 +509,27 @@ const styles = StyleSheet.create({
   modalDoneText: {
     color: '#fff',
     fontSize: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    color: '#fff',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  fullWidthButton: {
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
